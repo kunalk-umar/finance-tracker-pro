@@ -13,4 +13,5 @@ requests==2.32.3
 drf-yasg==1.21.7
 django-filter==24.3
 python-dateutil==2.9.0
-
+gunicorn==22.0.0
+whitenoise==6.7.0
