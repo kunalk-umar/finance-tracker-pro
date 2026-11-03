@@ -134,3 +134,4 @@ Railway is the simplest cloud hosting platform with automatic GitHub CI/CD:
 | Run migrations | `docker compose exec backend python manage.py migrate` |
 | Backup database | `docker compose exec db mysqldump -u finance_user -p finance_tracker > backup.sql` |
 | Restore database | `docker compose exec -T db mysql -u finance_user -p finance_tracker < backup.sql` |
+

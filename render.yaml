@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: finance-tracker-web
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_demo_data"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: finance-tracker-ml
+          property: host
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+  - type: web
+    name: finance-tracker-ml
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: ml_service
+    buildCommand: "pip install -r requirements.txt && python train_models.py"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
