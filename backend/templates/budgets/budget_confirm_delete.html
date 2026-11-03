@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+{% block title %}Delete — Finance Tracker Pro{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5"><div class="col-md-5">
+  <div class="card-dark p-4 text-center">
+    <div style="width:64px;height:64px;background:rgba(239,68,68,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;"><i class="fa-solid fa-trash fa-2x" style="color:#ef4444;"></i></div>
+    <h4 class="fw-bold mb-2">Confirm Delete</h4>
+    <p class="text-muted mb-4">Are you sure you want to delete <strong class="text-white">{% if budget %}{{ budget.name }}{% elif object %}{{ object.name }}{% endif %}</strong>? This cannot be undone.</p>
+    <form method="post" class="d-flex gap-3 justify-content-center">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
+      <a href="{% url 'budget_list' %}" class="btn" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">Cancel</a>
+    </form>
+  </div>
+</div></div>
+{% endblock %}
+

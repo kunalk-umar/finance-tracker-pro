@@ -1,0 +1,168 @@
+{% extends "base/base.html" %}
+{% block title %}{{ title }} — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'transaction_list' %}" style="color:#10b981;">Transactions</a></li><li class="breadcrumb-item active text-muted">{{ title }}</li></ol></nav>
+  <h2 class="fw-bold mb-0">{{ title }}</h2>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}<div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}
+{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card-dark p-4">
+      <form method="post" novalidate id="transactionForm">
+        {% csrf_token %}
+        <!-- Type Toggle -->
+        <div class="mb-4">
+          <label class="form-label text-muted small fw-semibold">Transaction Type</label>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn flex-grow-1 type-btn" id="btn-expense" data-type="expense" style="background:rgba(239,68,68,.12);border:2px solid #ef4444;color:#ef4444;font-weight:600;"><i class="fa-solid fa-arrow-down me-2"></i>Expense</button>
+            <button type="button" class="btn flex-grow-1 type-btn" id="btn-income" data-type="income" style="background:#21262d;border:2px solid #30363d;color:#8b949e;font-weight:600;"><i class="fa-solid fa-arrow-up me-2"></i>Income</button>
+          </div>
+          <select name="transaction_type" id="id_transaction_type" style="display:none;">
+            <option value="expense" {% if form.transaction_type.value == 'expense' or not form.transaction_type.value %}selected{% endif %}>expense</option>
+            <option value="income" {% if form.transaction_type.value == 'income' %}selected{% endif %}>income</option>
+          </select>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Amount (₹) *</label>
+            {{ form.amount }}
+            {% if form.amount.errors %}<div class="text-danger small">{{ form.amount.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Date *</label>
+            {{ form.date }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-semibold">Description *</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Category</label>
+            {{ form.category }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Merchant / Source</label>
+            {{ form.merchant }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Payment Method</label>
+            {{ form.payment_method }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Status</label>
+            {{ form.status }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-semibold">Notes (optional)</label>
+            {{ form.notes }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-semibold">Tags (comma-separated)</label>
+            {{ form.tags }}
+          </div>
+        </div>
+
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-accent px-4"><i class="fa-solid fa-floppy-disk me-2"></i>{{ action }} Transaction</button>
+          <a href="{% url 'transaction_list' %}" class="btn" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Suggestion Panel -->
+  <div class="col-lg-4">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-robot me-2" style="color:#10b981;"></i>AI Category Suggestion</h6>
+      <p class="small text-muted mb-3">Enter a description and merchant, then click below to get an AI-powered category suggestion.</p>
+      <button type="button" class="btn btn-sm w-100 mb-3" style="background:rgba(16,185,129,.12);border:1px solid #10b981;color:#10b981;" onclick="getAISuggestion()">
+        <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Get AI Suggestion
+      </button>
+      <div id="aiResult" style="display:none;" class="p-3" style="background:#0d1117;border-radius:8px;border:1px solid #30363d;">
+        <p class="small text-muted mb-1">Suggested Category:</p>
+        <h6 class="fw-bold mb-1" id="aiCategory" style="color:#10b981;"></h6>
+        <p class="small text-muted mb-0">Confidence: <span id="aiConfidence"></span></p>
+        <p class="small text-muted mb-0">Source: <span id="aiSource"></span></p>
+        <button class="btn btn-sm btn-accent mt-2 w-100" onclick="applyAISuggestion()">Apply Suggestion</button>
+      </div>
+    </div>
+
+    {% if transaction %}
+    <div class="card-dark p-4 mt-4">
+      <h6 class="fw-bold mb-3">Transaction Info</h6>
+      <p class="small text-muted mb-1">ID: <code style="color:#10b981;font-size:.75rem;">{{ transaction.pk }}</code></p>
+      <p class="small text-muted mb-1">Created: {{ transaction.created_at|date:"d M Y H:i" }}</p>
+      <p class="small text-muted mb-0">Updated: {{ transaction.updated_at|date:"d M Y H:i" }}</p>
+      {% if transaction.is_anomaly %}
+        <div class="mt-2 p-2" style="background:rgba(239,68,68,.1);border-radius:6px;border:1px solid rgba(239,68,68,.3);">
+          <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+          <small style="color:#f59e0b;">Anomaly detected (score: {{ transaction.anomaly_score|floatformat:3 }})</small>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Type toggle
+let currentType = '{{ form.transaction_type.value|default:"expense" }}';
+function setType(type) {
+  currentType = type;
+  document.getElementById('id_transaction_type').value = type;
+  const expBtn = document.getElementById('btn-expense');
+  const incBtn = document.getElementById('btn-income');
+  if (type === 'expense') {
+    expBtn.style.cssText = 'flex-grow:1;background:rgba(239,68,68,.12);border:2px solid #ef4444;color:#ef4444;font-weight:600;';
+    incBtn.style.cssText = 'flex-grow:1;background:#21262d;border:2px solid #30363d;color:#8b949e;font-weight:600;';
+  } else {
+    incBtn.style.cssText = 'flex-grow:1;background:rgba(16,185,129,.12);border:2px solid #10b981;color:#10b981;font-weight:600;';
+    expBtn.style.cssText = 'flex-grow:1;background:#21262d;border:2px solid #30363d;color:#8b949e;font-weight:600;';
+  }
+}
+document.getElementById('btn-expense').addEventListener('click', () => setType('expense'));
+document.getElementById('btn-income').addEventListener('click', () => setType('income'));
+setType(currentType);
+
+let suggestedCategory = '';
+
+async function getAISuggestion() {
+  const desc = document.querySelector('[name="description"]').value;
+  const merchant = document.querySelector('[name="merchant"]').value;
+  if (!desc && !merchant) { alert('Please enter a description or merchant first.'); return; }
+  try {
+    const resp = await fetch('/dashboard/ml/predict-category/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ description: desc, merchant: merchant })
+    });
+    const data = await resp.json();
+    document.getElementById('aiCategory').textContent = data.category;
+    document.getElementById('aiConfidence').textContent = (data.confidence * 100).toFixed(0) + '%';
+    document.getElementById('aiSource').textContent = data.source || 'ML';
+    document.getElementById('aiResult').style.display = 'block';
+    suggestedCategory = data.category;
+  } catch(e) { alert('AI service unavailable. Please select category manually.'); }
+}
+
+function applyAISuggestion() {
+  const catSelect = document.getElementById('id_category');
+  for (let opt of catSelect.options) {
+    if (opt.text.toLowerCase().includes(suggestedCategory.toLowerCase())) {
+      opt.selected = true; break;
+    }
+  }
+}
+</script>
+{% endblock %}
+

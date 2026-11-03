@@ -1,0 +1,163 @@
+{% extends "base/base.html" %}
+{% block title %}Financial Reports — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div><h2 class="fw-bold mb-0">Financial Reports</h2><p class="text-muted mb-0">{{ period_label }}</p></div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'export_report_csv' %}?type={{ report_type }}&month={{ month }}&year={{ year }}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</a>
+    <a href="{% url 'export_report_pdf' %}?type={{ report_type }}&month={{ month }}&year={{ year }}" class="btn btn-accent btn-sm"><i class="fa-solid fa-file-pdf me-1"></i>Export PDF</a>
+  </div>
+</div>
+
+<!-- Report Type Selector -->
+<div class="card-dark p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label text-muted small mb-1">Report Type</label>
+      <select name="type" class="form-select form-select-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;width:auto;">
+        <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly</option>
+        <option value="annual" {% if report_type == 'annual' %}selected{% endif %}>Annual</option>
+        <option value="all" {% if report_type == 'all' %}selected{% endif %}>All Time</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label text-muted small mb-1">Month</label>
+      <select name="month" class="form-select form-select-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;width:auto;">
+        {% for m_num, m_name in months %}<option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label text-muted small mb-1">Year</label>
+      <select name="year" class="form-select form-select-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;width:auto;">
+        {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-accent btn-sm">Generate Report</button></div>
+  </form>
+</div>
+
+<!-- KPI Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card-dark p-4 text-center">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-arrow-up me-1" style="color:#10b981;"></i>Total Income</p>
+      <h4 class="fw-bold text-success mb-0">₹{{ total_income|floatformat:2 }}</h4>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-dark p-4 text-center">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-arrow-down me-1" style="color:#ef4444;"></i>Total Expenses</p>
+      <h4 class="fw-bold text-danger mb-0">₹{{ total_expense|floatformat:2 }}</h4>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-dark p-4 text-center">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-piggy-bank me-1" style="color:#3b82f6;"></i>Net Savings</p>
+      <h4 class="fw-bold mb-0 {% if net_savings >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ net_savings|floatformat:2 }}</h4>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-dark p-4 text-center">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-percent me-1" style="color:#f59e0b;"></i>Savings Rate</p>
+      <h4 class="fw-bold text-warning mb-0">{{ savings_rate }}%</h4>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Category Breakdown -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Expense Categories</h6>
+      {% if category_breakdown %}
+        <div class="table-responsive">
+          <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+            <thead><tr><th class="text-muted small">Category</th><th class="text-muted small text-end">Amount</th><th class="text-muted small text-end">Count</th></tr></thead>
+            <tbody>
+              {% for c in category_breakdown %}
+              <tr style="border-bottom:1px solid #21262d;">
+                <td><span class="badge" style="background:rgba(239,68,68,.1);color:#ef4444;font-size:.7rem;">{{ c.category__name|default:"Uncategorized" }}</span></td>
+                <td class="text-end fw-bold text-danger">₹{{ c.total|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ c.count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}<p class="text-muted small">No expense data for this period.</p>{% endif %}
+    </div>
+  </div>
+
+  <!-- Income Sources -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Income Sources</h6>
+      {% if income_sources %}
+        <div class="table-responsive">
+          <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+            <thead><tr><th class="text-muted small">Source</th><th class="text-muted small text-end">Amount</th><th class="text-muted small text-end">Count</th></tr></thead>
+            <tbody>
+              {% for s in income_sources %}
+              <tr style="border-bottom:1px solid #21262d;">
+                <td><span class="badge" style="background:rgba(16,185,129,.1);color:#10b981;font-size:.7rem;">{{ s.category__name|default:s.merchant|default:"Income" }}</span></td>
+                <td class="text-end fw-bold text-success">₹{{ s.total|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ s.count }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}<p class="text-muted small">No income data for this period.</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Annual Monthly Summary -->
+{% if report_type == 'annual' and monthly_summary %}
+<div class="card-dark p-4 mb-4">
+  <h6 class="fw-bold mb-3">Monthly Breakdown — {{ year }}</h6>
+  <div class="table-responsive">
+    <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+      <thead><tr><th class="text-muted small">Month</th><th class="text-muted small text-end">Income</th><th class="text-muted small text-end">Expenses</th><th class="text-muted small text-end">Savings</th></tr></thead>
+      <tbody>
+        {% for m in monthly_summary %}
+        <tr style="border-bottom:1px solid #21262d;">
+          <td style="color:#e6edf3;">{{ m.month }}</td>
+          <td class="text-end text-success">₹{{ m.income|floatformat:0 }}</td>
+          <td class="text-end text-danger">₹{{ m.expense|floatformat:0 }}</td>
+          <td class="text-end fw-bold {% if m.savings >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ m.savings|floatformat:0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Transaction List -->
+<div class="card-dark p-4">
+  <h6 class="fw-bold mb-3">Transactions ({{ period_label }})</h6>
+  {% if txns %}
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+        <thead><tr><th class="text-muted small">Date</th><th class="text-muted small">Type</th><th class="text-muted small">Category</th><th class="text-muted small">Description</th><th class="text-muted small text-end">Amount</th></tr></thead>
+        <tbody>
+          {% for t in txns %}
+          <tr style="border-bottom:1px solid #21262d;">
+            <td><small class="text-muted">{{ t.date|date:"d M Y" }}</small></td>
+            <td><span class="badge" style="background:{% if t.is_income %}rgba(16,185,129,.12){% else %}rgba(239,68,68,.12){% endif %};color:{% if t.is_income %}#10b981{% else %}#ef4444{% endif %};font-size:.7rem;">{{ t.transaction_type|title }}</span></td>
+            <td>{% if t.category %}<small class="text-muted">{{ t.category.name }}</small>{% else %}<small class="text-muted">—</small>{% endif %}</td>
+            <td style="color:#e6edf3;font-size:.875rem;">{{ t.description|truncatechars:40 }}</td>
+            <td class="text-end fw-bold {% if t.is_income %}text-success{% else %}text-danger{% endif %}">{% if t.is_income %}+{% else %}-{% endif %}₹{{ t.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted text-center py-4">No transactions found for this period.</p>
+  {% endif %}
+</div>
+{% endblock %}
+

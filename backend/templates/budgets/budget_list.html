@@ -1,0 +1,143 @@
+{% extends "base/base.html" %}
+{% block title %}Budget Management — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div><h2 class="fw-bold mb-0">Budget Management</h2><p class="text-muted mb-0">{{ month_name }} Budgets</p></div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'budget_create' %}" class="btn btn-accent btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Budget</a>
+    <a href="{% url 'goal_create' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;"><i class="fa-solid fa-bullseye me-1"></i>Add Goal</a>
+  </div>
+</div>
+
+<!-- Month Selector -->
+<div class="card-dark p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label text-muted small mb-1">Month</label>
+      <select name="month" class="form-select form-select-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;width:auto;">
+        {% for m_num, m_name in months %}<option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label text-muted small mb-1">Year</label>
+      <select name="year" class="form-select form-select-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;width:auto;">
+        {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-accent btn-sm">View</button></div>
+  </form>
+</div>
+
+{% if messages %}{% for msg in messages %}<div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}
+
+<!-- Overall Summary -->
+{% if total_budget > 0 %}
+<div class="card-dark p-4 mb-4">
+  <div class="d-flex justify-content-between mb-2">
+    <h6 class="fw-bold">Overall Monthly Budget</h6>
+    <span class="small text-muted">₹{{ total_spent|floatformat:0 }} of ₹{{ total_budget|floatformat:0 }}</span>
+  </div>
+  {% with pct=total_spent|floatformat:0 %}
+  <div class="progress mb-2" style="height:12px;background:#21262d;border-radius:6px;">
+    <div class="progress-bar" role="progressbar"
+      style="width:{% widthratio total_spent total_budget 100 %}%;background:{% if total_spent > total_budget %}#ef4444{% elif total_spent|floatformat:0 > total_budget|floatformat:0 %}#f59e0b{% else %}#10b981{% endif %};border-radius:6px;">
+    </div>
+  </div>
+  {% endwith %}
+  <small class="text-muted">Remaining: ₹{{ total_budget|floatformat:0 }} − ₹{{ total_spent|floatformat:0 }} = <strong style="color:#10b981;">₹{% widthratio total_budget total_budget 1 %}</strong></small>
+</div>
+{% endif %}
+
+<!-- Budget Cards -->
+<div class="row g-3 mb-4">
+  {% for b in budgets %}
+  <div class="col-md-4">
+    <div class="card-dark p-4 h-100" style="border-color:{% if b.is_exceeded %}#ef4444{% elif b.is_warning %}#f59e0b{% else %}#30363d{% endif %};">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h6 class="fw-bold mb-0" style="color:#e6edf3;">{{ b.name }}</h6>
+          <small class="text-muted">{% if b.category %}{{ b.category.name }}{% else %}Overall{% endif %}</small>
+        </div>
+        <div class="d-flex gap-1">
+          {% if b.is_exceeded %}<span class="badge text-bg-danger" style="font-size:.65rem;">OVER</span>
+          {% elif b.is_warning %}<span class="badge text-bg-warning" style="font-size:.65rem;">ALERT</span>
+          {% endif %}
+          <a href="{% url 'budget_edit' b.pk %}" class="btn btn-sm p-1" style="background:#21262d;border:1px solid #30363d;color:#8b949e;"><i class="fa-solid fa-pen fa-xs"></i></a>
+          <a href="{% url 'budget_delete' b.pk %}" class="btn btn-sm p-1" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;"><i class="fa-solid fa-trash fa-xs"></i></a>
+        </div>
+      </div>
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <small class="text-muted">Spent</small>
+          <small class="fw-semibold {% if b.is_exceeded %}text-danger{% elif b.is_warning %}text-warning{% else %}text-success{% endif %}">{{ b.utilization_pct }}%</small>
+        </div>
+        <div class="progress mb-1" style="height:8px;background:#21262d;border-radius:4px;">
+          <div class="progress-bar" style="width:{% if b.utilization_pct > 100 %}100{% else %}{{ b.utilization_pct }}{% endif %}%;background:{% if b.is_exceeded %}#ef4444{% elif b.is_warning %}#f59e0b{% else %}#10b981{% endif %};border-radius:4px;transition:width .5s;"></div>
+        </div>
+      </div>
+      <div class="row g-2 text-center">
+        <div class="col-4">
+          <p class="small text-muted mb-0">Budget</p>
+          <p class="fw-bold mb-0 small">₹{{ b.amount|floatformat:0 }}</p>
+        </div>
+        <div class="col-4">
+          <p class="small text-muted mb-0">Spent</p>
+          <p class="fw-bold mb-0 small {% if b.is_exceeded %}text-danger{% else %}text-warning{% endif %}">₹{{ b.spent|floatformat:0 }}</p>
+        </div>
+        <div class="col-4">
+          <p class="small text-muted mb-0">Left</p>
+          <p class="fw-bold mb-0 small {% if b.remaining < 0 %}text-danger{% else %}text-success{% endif %}">₹{{ b.remaining|floatformat:0 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="card-dark p-5 text-center">
+      <i class="fa-solid fa-wallet fa-3x mb-3" style="color:#30363d;"></i>
+      <p class="text-muted mb-3">No budgets set for {{ month_name }}.</p>
+      <a href="{% url 'budget_create' %}" class="btn btn-accent">Create Your First Budget</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Financial Goals -->
+<div class="mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0"><i class="fa-solid fa-bullseye me-2" style="color:#10b981;"></i>Financial Goals</h5>
+    <a href="{% url 'goal_create' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">+ Add Goal</a>
+  </div>
+  <div class="row g-3">
+    {% for g in goals %}
+    <div class="col-md-4">
+      <div class="card-dark p-4">
+        <div class="d-flex justify-content-between mb-2">
+          <h6 class="fw-bold mb-0">{{ g.name }}</h6>
+          <div class="d-flex gap-1">
+            <a href="{% url 'goal_edit' g.pk %}" class="btn btn-sm p-1" style="background:#21262d;border:1px solid #30363d;color:#8b949e;"><i class="fa-solid fa-pen fa-xs"></i></a>
+            <a href="{% url 'goal_delete' g.pk %}" class="btn btn-sm p-1" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;"><i class="fa-solid fa-trash fa-xs"></i></a>
+          </div>
+        </div>
+        <small class="text-muted d-block mb-2 text-capitalize">{{ g.get_goal_type_display }}</small>
+        <div class="d-flex justify-content-between mb-1">
+          <small class="text-muted">Progress</small>
+          <small style="color:#10b981;">{{ g.progress_pct }}%</small>
+        </div>
+        <div class="progress mb-2" style="height:8px;background:#21262d;border-radius:4px;">
+          <div class="progress-bar" style="width:{% if g.progress_pct > 100 %}100{% else %}{{ g.progress_pct }}{% endif %}%;background:#10b981;border-radius:4px;"></div>
+        </div>
+        <div class="d-flex justify-content-between">
+          <small class="text-muted">₹{{ g.current_amount|floatformat:0 }}</small>
+          <small class="text-muted">₹{{ g.target_amount|floatformat:0 }}</small>
+        </div>
+        {% if g.deadline %}<small class="text-muted d-block mt-1"><i class="fa-solid fa-calendar me-1"></i>Deadline: {{ g.deadline|date:"d M Y" }}</small>{% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12"><p class="text-muted small">No goals set. <a href="{% url 'goal_create' %}" style="color:#10b981;">Create a goal</a></p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

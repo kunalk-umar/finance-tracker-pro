@@ -1,0 +1,252 @@
+{% extends "base/base.html" %}
+{% block title %}Dashboard — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="fw-bold mb-0">Dashboard</h2>
+    <p class="text-muted mb-0">{{ month_name }} Overview</p>
+  </div>
+  <a href="{% url 'transaction_create' %}" class="btn btn-accent"><i class="fa-solid fa-plus me-2"></i>Add Transaction</a>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-scale-balanced me-1" style="color:#10b981;"></i>Total Balance</p>
+      <h4 class="fw-bold mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ balance|floatformat:0 }}</h4>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-arrow-up me-1" style="color:#10b981;"></i>Total Income</p>
+      <h4 class="fw-bold mb-0" style="color:#10b981;">₹{{ total_income|floatformat:0 }}</h4>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-arrow-down me-1" style="color:#ef4444;"></i>Total Expenses</p>
+      <h4 class="fw-bold mb-0" style="color:#ef4444;">₹{{ total_expense|floatformat:0 }}</h4>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-piggy-bank me-1" style="color:#3b82f6;"></i>Monthly Savings</p>
+      <h4 class="fw-bold mb-0" style="color:#3b82f6;">₹{{ curr_savings|floatformat:0 }}</h4>
+      {% if income_change != 0 %}<small class="{% if income_change > 0 %}text-success{% else %}text-danger{% endif %}">{{ income_change }}% vs last month</small>{% endif %}
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-percent me-1" style="color:#f59e0b;"></i>Savings Rate</p>
+      <h4 class="fw-bold mb-0" style="color:#f59e0b;">{{ savings_rate }}%</h4>
+    </div>
+  </div>
+  <div class="col-6 col-lg-2">
+    <div class="card-dark p-3 h-100">
+      <p class="small text-muted mb-1"><i class="fa-solid fa-chart-pie me-1" style="color:#8b5cf6;"></i>Budget Used</p>
+      <h4 class="fw-bold mb-0" style="color:{% if budget_utilization > 100 %}#ef4444{% elif budget_utilization > 80 %}#f59e0b{% else %}#8b5cf6{% endif %};">{{ budget_utilization }}%</h4>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3">Income vs Expenses (Last 6 Months)</h6>
+      <canvas id="incomeExpenseChart" height="220"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3">Expense Distribution</h6>
+      <canvas id="categoryChart" height="220"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3">Daily Spending Activity (Last 30 Days)</h6>
+      <canvas id="dailyChart" height="180"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-lightbulb me-2" style="color:#f59e0b;"></i>Financial Insights</h6>
+      {% if insights %}
+        {% for insight in insights %}
+          <div class="d-flex align-items-start mb-2 p-2" style="background:#0d1117;border-radius:8px;border-left:3px solid {% if insight.type == 'success' %}#10b981{% elif insight.type == 'danger' %}#ef4444{% elif insight.type == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};">
+            <i class="fa-solid {{ insight.icon }} me-2 mt-1" style="color:{% if insight.type == 'success' %}#10b981{% elif insight.type == 'danger' %}#ef4444{% elif insight.type == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};font-size:.8rem;"></i>
+            <p class="small mb-0" style="color:#e6edf3;line-height:1.4;">{{ insight.text }}</p>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small">Add transactions to get personalized insights.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Budget Alerts + Recent Transactions -->
+<div class="row g-4">
+  {% if budget_alerts %}
+  <div class="col-12">
+    <div class="card-dark p-4" style="border-color:#f59e0b;">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-bell me-2" style="color:#f59e0b;"></i>Budget Alerts</h6>
+      <div class="row g-2">
+        {% for b in budget_alerts %}
+          <div class="col-md-4">
+            <div class="p-3" style="background:#0d1117;border-radius:8px;border:1px solid {% if b.is_exceeded %}#ef4444{% else %}#f59e0b{% endif %};">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="small fw-semibold">{{ b.name }}</span>
+                <span class="small {% if b.is_exceeded %}text-danger{% else %}text-warning{% endif %}">{{ b.utilization_pct }}%</span>
+              </div>
+              <div class="progress" style="height:6px;background:#21262d;">
+                <div class="progress-bar {% if b.is_exceeded %}bg-danger{% else %}bg-warning{% endif %}" style="width:{% if b.utilization_pct > 100 %}100{% else %}{{ b.utilization_pct }}{% endif %}%;"></div>
+              </div>
+              <div class="d-flex justify-content-between mt-1">
+                <small class="text-muted">₹{{ b.spent|floatformat:0 }} spent</small>
+                <small class="text-muted">of ₹{{ b.amount|floatformat:0 }}</small>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="col-12">
+    <div class="card-dark p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Recent Transactions</h6>
+        <a href="{% url 'transaction_list' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">View All</a>
+      </div>
+      {% if recent_txns %}
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+            <thead><tr style="border-bottom:1px solid #30363d;">
+              <th class="text-muted small fw-semibold">Date</th>
+              <th class="text-muted small fw-semibold">Description</th>
+              <th class="text-muted small fw-semibold">Category</th>
+              <th class="text-muted small fw-semibold text-end">Amount</th>
+            </tr></thead>
+            <tbody>
+              {% for t in recent_txns %}
+              <tr style="border-bottom:1px solid #21262d;">
+                <td><small class="text-muted">{{ t.date|date:"d M" }}</small></td>
+                <td>
+                  <p class="mb-0 small fw-semibold" style="color:#e6edf3;">{{ t.description|truncatechars:30 }}</p>
+                  {% if t.merchant %}<small class="text-muted">{{ t.merchant }}</small>{% endif %}
+                </td>
+                <td>
+                  {% if t.category %}
+                    <span class="badge" style="background:rgba(16,185,129,.12);color:#10b981;font-size:.7rem;">{{ t.category.name }}</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary" style="font-size:.7rem;">Uncategorized</span>
+                  {% endif %}
+                </td>
+                <td class="text-end fw-bold {% if t.is_income %}text-success{% else %}text-danger{% endif %}">
+                  {% if t.is_income %}+{% else %}-{% endif %}₹{{ t.amount|floatformat:0 }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5">
+          <i class="fa-solid fa-receipt fa-3x mb-3" style="color:#30363d;"></i>
+          <p class="text-muted">No transactions yet. <a href="{% url 'transaction_create' %}" style="color:#10b981;">Add your first transaction</a></p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CHART_DEFAULTS = {
+  color: '#8b949e',
+  borderColor: '#30363d',
+  gridColor: 'rgba(48,54,61,0.5)',
+};
+Chart.defaults.color = CHART_DEFAULTS.color;
+
+// 1. Income vs Expense Bar Chart
+const monthlyData = {{ monthly_json|safe }};
+new Chart(document.getElementById('incomeExpenseChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [
+      { label: 'Income', data: monthlyData.map(d => d.income), backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1, borderRadius: 6 },
+      { label: 'Expense', data: monthlyData.map(d => d.expense), backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 6 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#8b949e', boxWidth: 12 } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: CHART_DEFAULTS.gridColor } },
+      y: { ticks: { color: '#8b949e', callback: v => '₹' + v.toLocaleString() }, grid: { color: CHART_DEFAULTS.gridColor } }
+    }
+  }
+});
+
+// 2. Category Doughnut Chart
+const catData = {{ cat_json|safe }};
+if (catData.length > 0) {
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catData.map(d => d.name),
+      datasets: [{ data: catData.map(d => d.total), backgroundColor: catData.map(d => d.color || '#10b981'), borderWidth: 2, borderColor: '#161b22' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ₹' + ctx.parsed.toLocaleString() } }
+      },
+      cutout: '65%'
+    }
+  });
+} else {
+  document.getElementById('categoryChart').parentElement.innerHTML += '<p class="text-muted text-center small mt-3">No expense data yet.</p>';
+}
+
+// 3. Daily Spending Line Chart
+const dailyData = {{ daily_json|safe }};
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: {
+    labels: dailyData.labels,
+    datasets: [{
+      label: 'Daily Spending (₹)',
+      data: dailyData.values,
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16,185,129,0.08)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#10b981',
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#8b949e', maxTicksLimit: 10, font: { size: 10 } }, grid: { color: CHART_DEFAULTS.gridColor } },
+      y: { ticks: { color: '#8b949e', callback: v => '₹' + v }, grid: { color: CHART_DEFAULTS.gridColor } }
+    }
+  }
+});
+</script>
+{% endblock %}

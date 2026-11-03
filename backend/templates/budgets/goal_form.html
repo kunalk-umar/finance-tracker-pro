@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+{% block title %}{{ title }} — Finance Tracker Pro{% endblock %}
+{% block content %}
+<div class="mb-4"><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'budget_list' %}" style="color:#10b981;">Budgets</a></li><li class="breadcrumb-item active text-muted">{{ title }}</li></ol></nav><h2 class="fw-bold mb-0">{{ title }}</h2></div>
+<div class="row justify-content-center"><div class="col-lg-6">
+  <div class="card-dark p-4">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3"><label class="form-label text-muted small fw-semibold">Goal Name *</label>{{ form.name }}{% if form.name.errors %}<div class="text-danger small">{{ form.name.errors|join:" " }}</div>{% endif %}</div>
+      <div class="mb-3"><label class="form-label text-muted small fw-semibold">Goal Type</label>{{ form.goal_type }}</div>
+      <div class="row g-3 mb-3">
+        <div class="col-6"><label class="form-label text-muted small fw-semibold">Target Amount (₹) *</label>{{ form.target_amount }}</div>
+        <div class="col-6"><label class="form-label text-muted small fw-semibold">Current Amount (₹)</label>{{ form.current_amount }}</div>
+      </div>
+      <div class="mb-3"><label class="form-label text-muted small fw-semibold">Deadline (optional)</label>{{ form.deadline }}</div>
+      <div class="mb-4"><label class="form-label text-muted small fw-semibold">Description</label>{{ form.description }}</div>
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-accent px-4"><i class="fa-solid fa-bullseye me-2"></i>{{ action }} Goal</button>
+        <a href="{% url 'budget_list' %}" class="btn" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div></div>
+{% endblock %}
+

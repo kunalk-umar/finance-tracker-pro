@@ -1,0 +1,142 @@
+{% extends "base/base.html" %}
+{% block title %}My Profile — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div><h2 class="mb-0 fw-bold">My Profile</h2><p class="text-muted mb-0">Manage your account information</p></div>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="row g-4">
+  <!-- Profile Card -->
+  <div class="col-lg-4">
+    <div class="card-dark p-4 text-center">
+      <div class="avatar-circle mx-auto mb-3">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="Avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+        {% else %}
+          <div style="width:80px;height:80px;border-radius:50%;background:rgba(16,185,129,.15);border:2px solid #10b981;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#10b981;margin:0 auto;">
+            {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+          </div>
+        {% endif %}
+      </div>
+      <h5 class="fw-bold mb-0">{{ request.user.get_full_name|default:request.user.username }}</h5>
+      <p class="text-muted small mb-2">@{{ request.user.username }}</p>
+      <span class="badge" style="background:rgba(16,185,129,.15);color:#10b981;">Active Account</span>
+      <hr style="border-color:#30363d;">
+      <div class="text-start">
+        <p class="small text-muted mb-1"><i class="fa-solid fa-envelope me-2" style="color:#10b981;"></i>{{ request.user.email|default:"Not set" }}</p>
+        <p class="small text-muted mb-1"><i class="fa-solid fa-phone me-2" style="color:#10b981;"></i>{{ profile.phone|default:"Not set" }}</p>
+        <p class="small text-muted mb-1"><i class="fa-solid fa-calendar me-2" style="color:#10b981;"></i>Joined {{ request.user.date_joined|date:"M d, Y" }}</p>
+        <p class="small text-muted mb-0"><i class="fa-solid fa-coins me-2" style="color:#10b981;"></i>Currency: {{ profile.get_currency_display }}</p>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card-dark p-4 mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0">Recent Notifications</h6>
+        <a href="{% url 'mark_all_read' %}" class="btn btn-sm" style="background:#21262d;color:#8b949e;border:1px solid #30363d;font-size:.75rem;">Mark All Read</a>
+      </div>
+      {% if notifications %}
+        {% for n in notifications %}
+          <div class="d-flex align-items-start mb-2 pb-2" style="border-bottom:1px solid #21262d;">
+            <div class="me-2 mt-1">
+              {% if n.notification_type == 'budget_alert' %}<i class="fa-solid fa-bell" style="color:#f59e0b;"></i>
+              {% elif n.notification_type == 'anomaly' %}<i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;"></i>
+              {% else %}<i class="fa-solid fa-circle-info" style="color:#10b981;"></i>{% endif %}
+            </div>
+            <div class="flex-grow-1">
+              <p class="small mb-0 {% if not n.is_read %}fw-semibold{% endif %}" style="color:#e6edf3;">{{ n.title }}</p>
+              <p class="small mb-0" style="color:#8b949e;">{{ n.message|truncatewords:12 }}</p>
+              <p class="small mb-0" style="color:#6e7681;font-size:.75rem;">{{ n.created_at|timesince }} ago</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small text-center mb-0">No notifications yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Edit Form -->
+  <div class="col-lg-8">
+    <div class="card-dark p-4">
+      <h5 class="fw-bold mb-4">Edit Profile</h5>
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">First Name</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div class="text-danger small">{{ form.first_name.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Last Name</label>
+            {{ form.last_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Email Address</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-semibold">Phone Number</label>
+            {{ form.phone }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-semibold">Bio</label>
+            {{ form.bio }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small fw-semibold">Currency</label>
+            {{ form.currency }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small fw-semibold">Monthly Income Goal (₹)</label>
+            {{ form.monthly_income_goal }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted small fw-semibold">Monthly Savings Goal (₹)</label>
+            {{ form.monthly_savings_goal }}
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-semibold">Profile Avatar</label>
+            {{ form.avatar }}
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              {{ form.receive_alerts }}
+              <label class="form-check-label small" style="color:#8b949e;">Receive budget and anomaly alerts</label>
+            </div>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="submit" class="btn btn-accent px-4"><i class="fa-solid fa-floppy-disk me-2"></i>Save Changes</button>
+            <a href="{% url 'dashboard' %}" class="btn ms-2" style="background:#21262d;color:#8b949e;border:1px solid #30363d;">Cancel</a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Password Change -->
+    <div class="card-dark p-4 mt-4">
+      <h6 class="fw-bold mb-3">Security</h6>
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="mb-0 small" style="color:#e6edf3;">Change your password</p>
+          <p class="mb-0 small" style="color:#8b949e;">We recommend using a strong, unique password</p>
+        </div>
+        <a href="{% url 'password_reset' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">Change Password</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

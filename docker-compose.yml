@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-RootPass@2024!}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-finance_tracker}
+      MYSQL_USER: ${MYSQL_USER:-finance_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Finance@2024!}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-RootPass@2024!}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      ML_SERVICE_PORT: 5001
+    volumes:
+      - ml_models:/app/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-docker-secret-change-in-production}
+      DEBUG: ${DEBUG:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      DB_NAME: ${MYSQL_DATABASE:-finance_tracker}
+      DB_USER: ${MYSQL_USER:-finance_user}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-Finance@2024!}
+      DB_HOST: db
+      DB_PORT: 3306
+      ML_SERVICE_URL: http://ml_service:5001
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+    volumes:
+      - ./backend:/app
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      ml_service:
+        condition: service_started
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             python manage.py seed_demo_data &&
+             python manage.py runserver 0.0.0.0:8000"
+
+volumes:
+  mysql_data:
+  ml_models:
+  static_files:
+  media_files:
+

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finance Tracker Pro — AI-Powered Personal Finance</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{font-family:'Inter',sans-serif;}
+    body{background:#0d1117;color:#e6edf3;margin:0;}
+    .navbar{background:#161b22;border-bottom:1px solid #30363d;padding:1rem 2rem;}
+    .navbar-brand{font-size:1.4rem;font-weight:800;color:#10b981!important;}
+    .btn-accent{background:#10b981;border-color:#10b981;color:#fff;font-weight:600;}
+    .btn-accent:hover{background:#059669;border-color:#059669;color:#fff;}
+    .btn-outline-accent{border:2px solid #10b981;color:#10b981;font-weight:600;}
+    .btn-outline-accent:hover{background:#10b981;color:#fff;}
+    .hero{padding:120px 0 80px;text-align:center;}
+    .hero h1{font-size:3.5rem;font-weight:800;background:linear-gradient(135deg,#10b981,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;}
+    .hero p{font-size:1.25rem;color:#8b949e;max-width:600px;margin:1.5rem auto;}
+    .feature-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:2rem;margin-bottom:1.5rem;transition:transform .2s,border-color .2s;}
+    .feature-card:hover{transform:translateY(-4px);border-color:#10b981;}
+    .feature-icon{width:56px;height:56px;background:rgba(16,185,129,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#10b981;margin-bottom:1rem;}
+    .feature-card h5{font-weight:700;color:#e6edf3;}
+    .feature-card p{color:#8b949e;font-size:.9rem;}
+    .tech-badge{display:inline-block;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:.4rem 1rem;margin:.25rem;font-size:.85rem;color:#e6edf3;}
+    .section-title{font-size:2rem;font-weight:700;text-align:center;margin-bottom:.75rem;}
+    .section-sub{text-align:center;color:#8b949e;margin-bottom:3rem;}
+    .cta-section{background:#161b22;border-top:1px solid #30363d;padding:80px 0;text-align:center;}
+    .stat-item{text-align:center;padding:1.5rem;}
+    .stat-item h3{font-size:2.5rem;font-weight:800;color:#10b981;}
+    .stat-item p{color:#8b949e;margin:0;}
+    footer{background:#0d1117;border-top:1px solid #30363d;padding:2rem;text-align:center;color:#8b949e;font-size:.85rem;}
+  </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="#"><i class="fa-solid fa-chart-line me-2"></i>Finance Tracker Pro</a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{% url 'login' %}" class="btn btn-outline-accent btn-sm">Sign In</a>
+      <a href="{% url 'register' %}" class="btn btn-accent btn-sm">Get Started Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="mb-3"><span class="badge" style="background:rgba(16,185,129,.12);color:#10b981;padding:.5rem 1rem;border-radius:20px;font-size:.85rem;"><i class="fa-solid fa-robot me-1"></i>AI-Powered Analytics</span></div>
+    <h1>Track. Analyze.<br>Grow Your Wealth.</h1>
+    <p>An intelligent personal finance platform with Machine Learning categorization, spending forecasts, anomaly detection and interactive analytics dashboards.</p>
+    <div class="d-flex justify-content-center gap-3 mt-4">
+      <a href="{% url 'register' %}" class="btn btn-accent btn-lg px-5">Get Started Free <i class="fa-solid fa-arrow-right ms-2"></i></a>
+      <a href="{% url 'login' %}" class="btn btn-outline-accent btn-lg px-5">Sign In</a>
+    </div>
+    <div class="mt-4 text-muted small">🔒 Demo: <code>demo_user</code> / <code>Demo@123456</code></div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="py-5" style="background:#161b22;border-top:1px solid #30363d;border-bottom:1px solid #30363d;">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3 stat-item"><h3>10+</h3><p>ML-powered categories</p></div>
+      <div class="col-md-3 stat-item"><h3>100%</h3><p>Data privacy</p></div>
+      <div class="col-md-3 stat-item"><h3>3-mo</h3><p>Spending forecast</p></div>
+      <div class="col-md-3 stat-item"><h3>REST</h3><p>Full API + Swagger docs</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="py-5 mt-4">
+  <div class="container">
+    <h2 class="section-title">Everything you need to master your finances</h2>
+    <p class="section-sub">Built with Django, Flask ML microservice, and real Machine Learning models</p>
+    <div class="row">
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-brain"></i></div>
+          <h5>ML Categorization</h5>
+          <p>Random Forest classifier automatically categorizes your expenses using TF-IDF features. Learns from corrections.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <h5>Spending Forecasts</h5>
+          <p>Linear Regression + Moving Average blended model predicts your next 3 months of spending from historical data.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h5>Anomaly Detection</h5>
+          <p>Isolation Forest algorithm identifies unusual transactions and flags them with anomaly scores.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <h5>Interactive Dashboard</h5>
+          <p>Real-time KPIs: balance, savings rate, budget utilization. 7 interactive Chart.js visualizations.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-wallet"></i></div>
+          <h5>Budget Management</h5>
+          <p>Set category-wise monthly budgets, track utilization, and get alerts at 80% threshold.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-file-invoice"></i></div>
+          <h5>Reports & Export</h5>
+          <p>Generate monthly/annual reports. Export to CSV or PDF. Import transactions via CSV.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="py-5" style="background:#161b22;border-top:1px solid #30363d;">
+  <div class="container text-center">
+    <h2 class="section-title">Built with Production-Grade Technology</h2>
+    <p class="section-sub">Full-stack, containerized, and ready for deployment</p>
+    <div>
+      <span class="tech-badge"><i class="fa-brands fa-python me-1" style="color:#3b82f6;"></i>Django 4.2</span>
+      <span class="tech-badge"><i class="fa-solid fa-flask me-1" style="color:#10b981;"></i>Flask ML Service</span>
+      <span class="tech-badge"><i class="fa-solid fa-database me-1" style="color:#f59e0b;"></i>MySQL 8</span>
+      <span class="tech-badge"><i class="fa-solid fa-robot me-1" style="color:#8b5cf6;"></i>scikit-learn</span>
+      <span class="tech-badge"><i class="fa-solid fa-chart-bar me-1" style="color:#ef4444;"></i>Chart.js</span>
+      <span class="tech-badge"><i class="fa-brands fa-docker me-1" style="color:#0ea5e9;"></i>Docker</span>
+      <span class="tech-badge"><i class="fa-solid fa-shield me-1" style="color:#10b981;"></i>DRF + Swagger</span>
+      <span class="tech-badge"><i class="fa-solid fa-table me-1" style="color:#f59e0b;"></i>Bootstrap 5</span>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2 style="font-size:2.5rem;font-weight:800;">Start tracking your finances today</h2>
+    <p style="color:#8b949e;margin:1rem 0 2rem;">Use demo credentials to explore — no setup required.</p>
+    <a href="{% url 'register' %}" class="btn btn-accent btn-lg px-5 me-3">Create Free Account</a>
+    <a href="{% url 'login' %}" class="btn btn-outline-accent btn-lg px-5">Demo Login</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p class="mb-1"><strong style="color:#10b981;">Finance Tracker Pro</strong> — AI-Powered Personal Finance & Spending Analytics Platform</p>
+    <p>Built with Django · Flask · MySQL · scikit-learn · Chart.js · Docker &nbsp;|&nbsp; © 2024</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

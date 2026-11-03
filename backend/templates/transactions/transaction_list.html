@@ -1,0 +1,150 @@
+{% extends "base/base.html" %}
+{% block title %}Transactions — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div><h2 class="fw-bold mb-0">Transactions</h2><p class="text-muted mb-0">Manage all your income & expenses</p></div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'import_csv' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;"><i class="fa-solid fa-file-import me-1"></i>Import CSV</a>
+    <a href="{% url 'export_csv' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;"><i class="fa-solid fa-file-export me-1"></i>Export CSV</a>
+    <a href="{% url 'transaction_create' %}" class="btn btn-accent btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Transaction</a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card-dark p-3 d-flex align-items-center gap-3">
+      <div style="width:44px;height:44px;background:rgba(16,185,129,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-arrow-up" style="color:#10b981;"></i></div>
+      <div><p class="small text-muted mb-0">Total Income</p><h5 class="fw-bold mb-0 text-success">₹{{ total_income|floatformat:0 }}</h5></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-dark p-3 d-flex align-items-center gap-3">
+      <div style="width:44px;height:44px;background:rgba(239,68,68,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-arrow-down" style="color:#ef4444;"></i></div>
+      <div><p class="small text-muted mb-0">Total Expenses</p><h5 class="fw-bold mb-0 text-danger">₹{{ total_expense|floatformat:0 }}</h5></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-dark p-3 d-flex align-items-center gap-3">
+      <div style="width:44px;height:44px;background:rgba(59,130,246,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-scale-balanced" style="color:#3b82f6;"></i></div>
+      <div><p class="small text-muted mb-0">Net Balance</p><h5 class="fw-bold mb-0 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">₹{{ balance|floatformat:0 }}</h5></div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card-dark p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label text-muted small mb-1">From Date</label>
+      {{ filter_form.date_from }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label text-muted small mb-1">To Date</label>
+      {{ filter_form.date_to }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label text-muted small mb-1">Type</label>
+      {{ filter_form.transaction_type }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label text-muted small mb-1">Category</label>
+      {{ filter_form.category }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label text-muted small mb-1">Search</label>
+      {{ filter_form.search }}
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-accent btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+      <a href="{% url 'transaction_list' %}" class="btn btn-sm flex-grow-1" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">Clear</a>
+    </div>
+  </form>
+</div>
+
+<!-- Transactions Table -->
+<div class="card-dark p-0">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover align-middle mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+      <thead>
+        <tr style="background:#0d1117;">
+          <th class="p-3 text-muted small fw-semibold">
+            <a href="?sort={% if sort == '-date' %}date{% else %}-date{% endif %}" style="color:#8b949e;text-decoration:none;">Date <i class="fa-solid fa-sort fa-xs"></i></a>
+          </th>
+          <th class="p-3 text-muted small fw-semibold">Type</th>
+          <th class="p-3 text-muted small fw-semibold">Category</th>
+          <th class="p-3 text-muted small fw-semibold">Description</th>
+          <th class="p-3 text-muted small fw-semibold">Merchant</th>
+          <th class="p-3 text-muted small fw-semibold">
+            <a href="?sort={% if sort == '-amount' %}amount{% else %}-amount{% endif %}" style="color:#8b949e;text-decoration:none;">Amount <i class="fa-solid fa-sort fa-xs"></i></a>
+          </th>
+          <th class="p-3 text-muted small fw-semibold">Payment</th>
+          <th class="p-3 text-muted small fw-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in page_obj %}
+        <tr style="border-bottom:1px solid #21262d;">
+          <td class="p-3"><small style="color:#8b949e;">{{ t.date|date:"d M Y" }}</small></td>
+          <td class="p-3">
+            <span class="badge" style="background:{% if t.is_income %}rgba(16,185,129,.12){% else %}rgba(239,68,68,.12){% endif %};color:{% if t.is_income %}#10b981{% else %}#ef4444{% endif %};">
+              {% if t.is_income %}<i class="fa-solid fa-arrow-up me-1"></i>Income{% else %}<i class="fa-solid fa-arrow-down me-1"></i>Expense{% endif %}
+            </span>
+          </td>
+          <td class="p-3">
+            {% if t.category %}
+              <span class="badge" style="background:rgba(16,185,129,.1);color:#10b981;font-size:.7rem;">{{ t.category.name }}</span>
+            {% elif t.ml_category_suggestion %}
+              <span class="badge text-bg-secondary" style="font-size:.7rem;" title="ML Suggestion">{{ t.ml_category_suggestion }} <i class="fa-solid fa-robot fa-xs"></i></span>
+            {% else %}
+              <span class="badge text-bg-secondary" style="font-size:.7rem;">Uncategorized</span>
+            {% endif %}
+          </td>
+          <td class="p-3">
+            <span style="color:#e6edf3;font-size:.875rem;">{{ t.description|truncatechars:35 }}</span>
+            {% if t.is_anomaly %}<i class="fa-solid fa-triangle-exclamation ms-1 text-warning" title="Anomaly detected (score: {{ t.anomaly_score|floatformat:2 }})"></i>{% endif %}
+          </td>
+          <td class="p-3"><small class="text-muted">{{ t.merchant|truncatechars:20|default:"—" }}</small></td>
+          <td class="p-3 fw-bold {% if t.is_income %}text-success{% else %}text-danger{% endif %}">
+            {% if t.is_income %}+{% else %}-{% endif %}₹{{ t.amount|floatformat:2 }}
+          </td>
+          <td class="p-3"><small class="text-muted text-capitalize">{{ t.payment_method|default:"—" }}</small></td>
+          <td class="p-3">
+            <div class="d-flex gap-1">
+              <a href="{% url 'transaction_edit' t.pk %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#8b949e;padding:.25rem .5rem;"><i class="fa-solid fa-pen fa-xs"></i></a>
+              <a href="{% url 'transaction_delete' t.pk %}" class="btn btn-sm" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:.25rem .5rem;"><i class="fa-solid fa-trash fa-xs"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <i class="fa-solid fa-receipt fa-3x mb-3" style="color:#30363d;display:block;"></i>
+            <p class="text-muted mb-2">No transactions found.</p>
+            <a href="{% url 'transaction_create' %}" class="btn btn-accent btn-sm">Add First Transaction</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="d-flex justify-content-between align-items-center p-3" style="border-top:1px solid #21262d;">
+    <small class="text-muted">Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} transactions</small>
+    <div class="d-flex gap-1">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">Prev</a>
+      {% endif %}
+      <span class="btn btn-sm btn-accent">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#8b949e;">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

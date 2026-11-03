@@ -1,0 +1,205 @@
+{% extends "base/base.html" %}
+{% block title %}ML Predictions — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div><h2 class="fw-bold mb-0">ML Predictions</h2><p class="text-muted mb-0">AI-powered categorization, forecasting & anomaly detection</p></div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge {% if ml_service_up %}text-bg-success{% else %}text-bg-danger{% endif %} py-2 px-3">
+      <i class="fa-solid {% if ml_service_up %}fa-circle-check{% else %}fa-circle-xmark{% endif %} me-1"></i>
+      ML Service {% if ml_service_up %}Online{% else %}Offline{% endif %}
+    </span>
+  </div>
+</div>
+
+{% if messages %}{% for msg in messages %}<div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}
+
+<div class="row g-4 mb-4">
+  <!-- Category Prediction -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-tags me-2" style="color:#10b981;"></i>Category Prediction</h6>
+      <p class="small text-muted mb-3">Enter a transaction description/merchant to get an AI-predicted category.</p>
+      <div class="mb-3">
+        <label class="form-label text-muted small">Description</label>
+        <input type="text" id="predDesc" class="form-control" placeholder="e.g. Swiggy food order" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-muted small">Merchant</label>
+        <input type="text" id="predMerchant" class="form-control" placeholder="e.g. Swiggy" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">
+      </div>
+      <button onclick="predictCategory()" class="btn btn-accent w-100 mb-3"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Predict Category</button>
+      <div id="predResult" class="p-3" style="background:#0d1117;border-radius:8px;border:1px solid #30363d;display:none;">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="small text-muted mb-1">Predicted Category</p>
+            <h5 class="fw-bold mb-0" id="predCategory" style="color:#10b981;"></h5>
+          </div>
+          <div class="text-end">
+            <p class="small text-muted mb-1">Confidence</p>
+            <h5 class="fw-bold mb-0" id="predConfidence" style="color:#f59e0b;"></h5>
+          </div>
+        </div>
+        <div class="progress mt-2" style="height:6px;background:#21262d;">
+          <div class="progress-bar" id="predBar" style="background:#10b981;transition:width .5s;"></div>
+        </div>
+        <small class="text-muted mt-1 d-block" id="predSource"></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spending Forecast -->
+  <div class="col-lg-6">
+    <div class="card-dark p-4 h-100">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-chart-line me-2" style="color:#3b82f6;"></i>Spending Forecast</h6>
+      <p class="small text-muted mb-3">Get a 3-month spending forecast based on your historical data.</p>
+      <button onclick="getForecast()" class="btn w-100 mb-3" style="background:rgba(59,130,246,.12);border:1px solid #3b82f6;color:#3b82f6;font-weight:600;">
+        <i class="fa-solid fa-crystal-ball me-2"></i>Get 3-Month Forecast
+      </button>
+      <div id="forecastResult" style="display:none;">
+        <canvas id="forecastChart" height="160"></canvas>
+        <div id="forecastTable" class="mt-3"></div>
+        <small class="text-muted" id="forecastNote"></small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Anomaly Detection -->
+<div class="card-dark p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h6 class="fw-bold mb-0"><i class="fa-solid fa-triangle-exclamation me-2" style="color:#f59e0b;"></i>Anomaly Detection (Isolation Forest)</h6>
+    <form method="post" action="{% url 'run_anomaly' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid #f59e0b;color:#f59e0b;font-weight:600;"><i class="fa-solid fa-radar me-2"></i>Run Anomaly Detection</button>
+    </form>
+  </div>
+  {% if anomalies %}
+    <div class="table-responsive">
+      <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+        <thead><tr><th class="text-muted small">Date</th><th class="text-muted small">Description</th><th class="text-muted small">Category</th><th class="text-muted small text-end">Amount</th><th class="text-muted small text-end">Anomaly Score</th></tr></thead>
+        <tbody>
+          {% for a in anomalies %}
+          <tr style="border-bottom:1px solid #21262d;">
+            <td><small class="text-muted">{{ a.date|date:"d M Y" }}</small></td>
+            <td style="color:#e6edf3;">{{ a.description|truncatechars:35 }}</td>
+            <td>{% if a.category %}<span class="badge" style="background:rgba(16,185,129,.1);color:#10b981;font-size:.7rem;">{{ a.category.name }}</span>{% else %}<span class="badge text-bg-secondary" style="font-size:.7rem;">Uncategorized</span>{% endif %}</td>
+            <td class="text-end fw-bold text-danger">₹{{ a.amount|floatformat:2 }}</td>
+            <td class="text-end"><span class="badge text-bg-warning" style="font-size:.7rem;">{{ a.anomaly_score|floatformat:3 }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted small mb-0">No anomalies detected. Click "Run Anomaly Detection" to analyze your transactions.</p>
+  {% endif %}
+</div>
+
+<!-- ML Models Info -->
+{% if models_info %}
+<div class="card-dark p-4 mb-4">
+  <h6 class="fw-bold mb-3"><i class="fa-solid fa-microchip me-2" style="color:#8b5cf6;"></i>Active ML Models</h6>
+  <div class="row g-3">
+    {% for m in models_info %}
+    <div class="col-md-4">
+      <div class="p-3" style="background:#0d1117;border-radius:8px;border:1px solid #30363d;">
+        <h6 class="fw-bold mb-1" style="color:#e6edf3;">{{ m.name }}</h6>
+        <p class="small text-muted mb-2">v{{ m.version }} · {{ m.get_model_type_display }}</p>
+        {% if m.accuracy %}<div class="d-flex justify-content-between"><small class="text-muted">Accuracy</small><small style="color:#10b981;">{{ m.accuracy|floatformat:1 }}%</small></div>{% endif %}
+        {% if m.f1_score %}<div class="d-flex justify-content-between"><small class="text-muted">F1 Score</small><small style="color:#10b981;">{{ m.f1_score|floatformat:3 }}</small></div>{% endif %}
+        <div class="d-flex justify-content-between"><small class="text-muted">Samples</small><small style="color:#8b949e;">{{ m.training_samples }}</small></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Predictions -->
+{% if recent_preds %}
+<div class="card-dark p-4">
+  <h6 class="fw-bold mb-3"><i class="fa-solid fa-history me-2" style="color:#8b949e;"></i>Recent Predictions</h6>
+  <div class="table-responsive">
+    <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+      <thead><tr><th class="text-muted small">Input</th><th class="text-muted small">Prediction</th><th class="text-muted small">Confidence</th><th class="text-muted small">Date</th></tr></thead>
+      <tbody>
+        {% for p in recent_preds %}
+        <tr style="border-bottom:1px solid #21262d;">
+          <td class="small text-muted">{{ p.input_data|truncatechars:40 }}</td>
+          <td><span class="badge" style="background:rgba(16,185,129,.1);color:#10b981;">{{ p.prediction }}</span></td>
+          <td class="small">{% if p.confidence %}{{ p.confidence|floatformat:0 }}%{% else %}—{% endif %}</td>
+          <td class="small text-muted">{{ p.created_at|date:"d M H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+let forecastChartInst = null;
+
+async function predictCategory() {
+  const desc = document.getElementById('predDesc').value;
+  const merchant = document.getElementById('predMerchant').value;
+  if (!desc && !merchant) { alert('Please enter description or merchant.'); return; }
+  try {
+    const resp = await fetch('/dashboard/ml/predict-category/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+      body: JSON.stringify({ description: desc, merchant: merchant })
+    });
+    const data = await resp.json();
+    document.getElementById('predCategory').textContent = data.category;
+    document.getElementById('predConfidence').textContent = (data.confidence * 100).toFixed(0) + '%';
+    document.getElementById('predBar').style.width = (data.confidence * 100) + '%';
+    document.getElementById('predSource').textContent = 'Source: ' + (data.source || 'ML');
+    document.getElementById('predResult').style.display = 'block';
+  } catch(e) { alert('Error calling prediction service.'); }
+}
+
+async function getForecast() {
+  document.getElementById('forecastResult').style.display = 'block';
+  try {
+    const resp = await fetch('/dashboard/ml/forecast/', { method: 'GET', headers: { 'X-CSRFToken': getCsrf() } });
+    const data = await resp.json();
+    const forecast = data.forecast || [];
+    const historical = (data.historical || []).slice(-6);
+
+    // Chart
+    const ctx = document.getElementById('forecastChart');
+    if (forecastChartInst) forecastChartInst.destroy();
+    forecastChartInst = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [...historical.map(d => d.month), ...forecast.map(d => d.month)],
+        datasets: [
+          { label: 'Historical', data: [...historical.map(d => d.amount), ...Array(forecast.length).fill(null)], borderColor: '#10b981', tension: 0.4, pointRadius: 3 },
+          { label: 'Forecast', data: [...Array(historical.length).fill(null), ...forecast.map(d => d.amount)], borderColor: '#3b82f6', borderDash: [6,4], tension: 0.4, pointRadius: 4, backgroundColor: 'rgba(59,130,246,0.08)', fill: true }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#8b949e', boxWidth: 12 } } }, scales: { x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: 'rgba(48,54,61,0.4)' } }, y: { ticks: { color: '#8b949e', callback: v => '₹' + v.toLocaleString() }, grid: { color: 'rgba(48,54,61,0.4)' } } } }
+    });
+
+    // Table
+    let html = '<table class="table table-dark table-sm mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;"><thead><tr><th class="text-muted small">Month</th><th class="text-muted small text-end">Forecast Amount</th></tr></thead><tbody>';
+    forecast.forEach(f => { html += `<tr style="border-bottom:1px solid #21262d;"><td class="small">${f.month}</td><td class="text-end fw-bold" style="color:#3b82f6;">₹${parseFloat(f.amount).toLocaleString()}</td></tr>`; });
+    html += '</tbody></table>';
+    document.getElementById('forecastTable').innerHTML = html;
+
+    const note = data.note || (data.method ? 'Method: ' + data.method : '');
+    document.getElementById('forecastNote').textContent = note;
+  } catch(e) { document.getElementById('forecastResult').innerHTML = '<p class="text-danger small">Error fetching forecast. Please try again.</p>'; }
+}
+
+function getCsrf() {
+  const c = document.cookie.split(';').find(x => x.trim().startsWith('csrftoken='));
+  return c ? c.trim().split('=')[1] : '';
+}
+</script>
+{% endblock %}
+

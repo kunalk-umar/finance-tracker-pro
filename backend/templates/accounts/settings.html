@@ -1,0 +1,49 @@
+{% extends "base/base.html" %}
+{% block title %}Settings — Finance Tracker Pro{% endblock %}
+{% block content %}
+<div class="mb-4"><h2 class="fw-bold mb-0">Settings</h2><p class="text-muted mb-0">Configure your preferences</p></div>
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card-dark p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-palette me-2" style="color:#10b981;"></i>Display Preferences</h6>
+      <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #21262d;">
+        <div><p class="mb-0 small fw-semibold">Currency</p><p class="mb-0 small text-muted">Current: {{ profile.get_currency_display }}</p></div>
+        <a href="{% url 'profile' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">Edit</a>
+      </div>
+      <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #21262d;">
+        <div><p class="mb-0 small fw-semibold">Notifications</p><p class="mb-0 small text-muted">Budget alerts and anomaly notifications</p></div>
+        <span class="badge {% if profile.receive_alerts %}text-bg-success{% else %}text-bg-secondary{% endif %}">{% if profile.receive_alerts %}Enabled{% else %}Disabled{% endif %}</span>
+      </div>
+    </div>
+    <div class="card-dark p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-shield-halved me-2" style="color:#10b981;"></i>Security</h6>
+      <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #21262d;">
+        <div><p class="mb-0 small fw-semibold">Password</p><p class="mb-0 small text-muted">Change your account password</p></div>
+        <a href="{% url 'password_reset' %}" class="btn btn-sm" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;">Reset</a>
+      </div>
+    </div>
+    <div class="card-dark p-4 mb-4">
+      <h6 class="fw-bold mb-3"><i class="fa-solid fa-download me-2" style="color:#10b981;"></i>Data Export</h6>
+      <p class="small text-muted">Export all your transaction data as CSV.</p>
+      <a href="{% url 'export_csv' %}" class="btn btn-sm btn-accent"><i class="fa-solid fa-file-csv me-2"></i>Export All Transactions (CSV)</a>
+    </div>
+    <div class="card-dark p-4" style="border-color:#ef4444;">
+      <h6 class="fw-bold mb-3" style="color:#ef4444;"><i class="fa-solid fa-triangle-exclamation me-2"></i>Danger Zone</h6>
+      <div class="d-flex justify-content-between align-items-center">
+        <div><p class="mb-0 small fw-semibold">Log out</p><p class="mb-0 small text-muted">Sign out of your current session</p></div>
+        <a href="{% url 'logout' %}" class="btn btn-sm btn-danger">Log Out</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Quick Links</h6>
+      <a href="{% url 'profile' %}" class="d-block py-2 text-decoration-none" style="color:#8b949e;border-bottom:1px solid #21262d;"><i class="fa-solid fa-user me-2" style="color:#10b981;"></i>Edit Profile</a>
+      <a href="{% url 'transaction_list' %}" class="d-block py-2 text-decoration-none" style="color:#8b949e;border-bottom:1px solid #21262d;"><i class="fa-solid fa-list me-2" style="color:#10b981;"></i>Transactions</a>
+      <a href="{% url 'budget_list' %}" class="d-block py-2 text-decoration-none" style="color:#8b949e;border-bottom:1px solid #21262d;"><i class="fa-solid fa-wallet me-2" style="color:#10b981;"></i>Budgets</a>
+      <a href="{% url 'reports' %}" class="d-block py-2 text-decoration-none" style="color:#8b949e;"><i class="fa-solid fa-file-invoice me-2" style="color:#10b981;"></i>Reports</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

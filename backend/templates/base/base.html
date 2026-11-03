@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Finance Tracker Pro{% endblock %}</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Font Awesome 6 CDN -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ─── CSS Variables ─────────────────────────────────────────────── */
+    :root {
+      --bg-dark:      #0d1117;
+      --bg-card:      #161b22;
+      --bg-sidebar:   #0d1117;
+      --accent:       #10b981;
+      --accent-hover: #059669;
+      --accent-soft:  rgba(16, 185, 129, 0.12);
+      --text-primary: #e6edf3;
+      --text-muted:   #8b949e;
+      --border:       #30363d;
+      --danger:       #f85149;
+      --warning:      #d29922;
+      --info:         #58a6ff;
+      --sidebar-w:    260px;
+      --topnav-h:     64px;
+    }
+
+    /* ─── Global Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ─── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ─── Sidebar ───────────────────────────────────────────────────── */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 1040;
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    #sidebar.collapsed {
+      transform: translateX(calc(-1 * var(--sidebar-w)));
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .sidebar-brand .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #047857);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .sidebar-brand .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-brand .brand-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .sidebar-brand .brand-tagline {
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Nav section labels */
+    .nav-section-label {
+      padding: 20px 20px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Nav links */
+    .sidebar-nav {
+      list-style: none;
+      margin: 0;
+      padding: 0 10px;
+      flex: 1;
+    }
+
+    .sidebar-nav li { margin-bottom: 2px; }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .sidebar-nav a:hover {
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .sidebar-nav a.active {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .sidebar-nav a.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 60%;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .sidebar-nav a .nav-icon {
+      width: 18px;
+      text-align: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-nav a .nav-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 20px;
+      line-height: 1.4;
+    }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: background 0.2s;
+    }
+
+    .sidebar-user:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+
+    .sidebar-user .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #047857);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .sidebar-user .user-info { flex: 1; min-width: 0; }
+    .sidebar-user .user-name { font-size: 12.5px; font-weight: 600; truncate: ellipsis; white-space: nowrap; overflow: hidden; }
+    .sidebar-user .user-role { font-size: 10.5px; color: var(--text-muted); }
+
+    /* ─── Overlay (mobile) ──────────────────────────────────────────── */
+    #sidebarOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1039;
+    }
+
+    /* ─── Top Navbar ────────────────────────────────────────────────── */
+    #topnav {
+      position: fixed;
+      top: 0;
+      left: var(--sidebar-w);
+      right: 0;
+      height: var(--topnav-h);
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      z-index: 1030;
+      transition: left 0.3s ease;
+    }
+
+    #topnav.sidebar-collapsed { left: 0; }
+
+    .topnav-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .topnav-toggle:hover { color: var(--text-primary); border-color: var(--accent); background: var(--accent-soft); }
+
+    .topnav-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .topnav-title small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: -2px;
+    }
+
+    .topnav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .topnav-btn:hover { color: var(--text-primary); border-color: var(--accent); background: var(--accent-soft); }
+
+    .topnav-btn .badge-dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 8px;
+      height: 8px;
+      background: var(--danger);
+      border-radius: 50%;
+      border: 2px solid var(--bg-card);
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border: 2px solid var(--bg-card);
+    }
+
+    /* User dropdown trigger */
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px 6px 6px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-primary);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .user-chip:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--text-primary); }
+
+    .user-chip .chip-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #047857);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .user-chip .chip-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      max-width: 100px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ─── Main Content ──────────────────────────────────────────────── */
+    #main-content {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--topnav-h);
+      min-height: calc(100vh - var(--topnav-h));
+      padding: 28px;
+      transition: margin-left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #main-content.sidebar-collapsed { margin-left: 0; }
+
+    .content-wrapper { flex: 1; }
+
+    /* ─── Footer ────────────────────────────────────────────────────── */
+    #page-footer {
+      margin-top: 40px;
+      padding: 20px 0 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #page-footer .footer-brand { color: var(--accent); font-weight: 600; }
+
+    #page-footer .footer-links { display: flex; gap: 16px; }
+    #page-footer .footer-links a { color: var(--text-muted); text-decoration: none; }
+    #page-footer .footer-links a:hover { color: var(--accent); }
+
+    /* ─── Cards ─────────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 12px !important;
+    }
+
+    .card-header {
+      background: transparent !important;
+      border-bottom: 1px solid var(--border) !important;
+      padding: 16px 20px !important;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* ─── Buttons ────────────────────────────────────────────────────── */
+    .btn-accent {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-accent:hover { background: var(--accent-hover); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,0.35); }
+
+    /* ─── Form controls ─────────────────────────────────────────────── */
+    .form-control, .form-select {
+      background: var(--bg-dark) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text-primary) !important;
+      border-radius: 8px !important;
+      font-size: 13.5px;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.15) !important;
+    }
+
+    .form-control::placeholder { color: var(--text-muted) !important; }
+
+    .form-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.3px; }
+
+    /* ─── Dropdown (Bootstrap override) ────────────────────────────── */
+    .dropdown-menu {
+      background: var(--bg-card) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+      padding: 6px !important;
+      min-width: 180px;
+    }
+
+    .dropdown-item {
+      color: var(--text-primary) !important;
+      border-radius: 6px !important;
+      font-size: 13px !important;
+      padding: 8px 12px !important;
+      transition: all 0.15s;
+    }
+
+    .dropdown-item:hover { background: rgba(255,255,255,0.06) !important; color: var(--accent) !important; }
+    .dropdown-item.text-danger:hover { background: rgba(248,81,73,0.1) !important; color: var(--danger) !important; }
+
+    .dropdown-divider { border-color: var(--border) !important; margin: 4px 0 !important; }
+
+    /* ─── Toast ─────────────────────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 300px;
+      max-width: 380px;
+    }
+
+    .ft-toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: slideIn 0.3s ease;
+    }
+
+    .ft-toast.toast-success { border-left: 3px solid var(--accent); }
+    .ft-toast.toast-error   { border-left: 3px solid var(--danger); }
+    .ft-toast.toast-warning { border-left: 3px solid var(--warning); }
+    .ft-toast.toast-info    { border-left: 3px solid var(--info); }
+
+    .ft-toast .toast-icon { font-size: 16px; padding-top: 1px; flex-shrink: 0; }
+    .ft-toast.toast-success .toast-icon { color: var(--accent); }
+    .ft-toast.toast-error   .toast-icon { color: var(--danger); }
+    .ft-toast.toast-warning .toast-icon { color: var(--warning); }
+    .ft-toast.toast-info    .toast-icon { color: var(--info); }
+
+    .ft-toast .toast-body { flex: 1; }
+    .ft-toast .toast-title { font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .ft-toast .toast-msg { font-size: 12px; color: var(--text-muted); }
+    .ft-toast .toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 14px; line-height: 1; }
+    .ft-toast .toast-close:hover { color: var(--text-primary); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(30px); }
+    }
+
+    /* ─── Badges ─────────────────────────────────────────────────────── */
+    .badge-accent { background: var(--accent-soft); color: var(--accent); border: 1px solid rgba(16,185,129,0.3); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+
+    /* ─── Page header ────────────────────────────────────────────────── */
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0 0 4px;
+    }
+
+    .page-header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────────────────── */
+    @media (max-width: 991.98px) {
+      #sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+      #sidebar.mobile-open { transform: translateX(0); }
+      #sidebarOverlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+      #sidebarOverlay.active { opacity: 1; pointer-events: all; }
+
+      #topnav { left: 0 !important; }
+      #main-content { margin-left: 0 !important; padding: 16px; }
+    }
+
+    @media (max-width: 575.98px) {
+      .user-chip .chip-name { display: none; }
+      #topnav { padding: 0 14px; }
+      .topnav-title { font-size: 14px; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════════════════════════ -->
+<nav id="sidebar">
+
+  <!-- Brand -->
+  <a href="{% url 'dashboard' %}" class="sidebar-brand">
+    <div class="brand-icon">
+      <i class="fa-solid fa-chart-line"></i>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">Finance Tracker</span>
+      <span class="brand-tagline">Pro &mdash; AI Powered</span>
+    </div>
+  </a>
+
+  <!-- Main Navigation -->
+  <div class="nav-section-label">Main</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="{% url 'dashboard' %}"
+         class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+        Dashboard
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'transaction_list' %}"
+         class="{% if request.resolver_match.url_name == 'transaction_list' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+        Transactions
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'add_transaction' %}"
+         class="{% if request.resolver_match.url_name == 'add_transaction' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-circle-plus"></i></span>
+        Add Transaction
+        <span class="nav-badge">+</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'budgets' %}"
+         class="{% if request.resolver_match.url_name == 'budgets' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
+        Budgets
+      </a>
+    </li>
+  </ul>
+
+  <!-- Analytics Navigation -->
+  <div class="nav-section-label">Insights</div>
+  <ul class="sidebar-nav">
+    <li>
+      <a href="{% url 'analytics' %}"
+         class="{% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-chart-bar"></i></span>
+        Analytics
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'ml_predictions' %}"
+         class="{% if request.resolver_match.url_name == 'ml_predictions' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-brain"></i></span>
+        ML Predictions
+        <span class="nav-badge">AI</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'reports' %}"
+         class="{% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-file-invoice"></i></span>
+        Reports
+      </a>
+    </li>
+  </ul>
+
+  <!-- Account Navigation -->
+  <div class="nav-section-label">Account</div>
+  <ul class="sidebar-nav" style="margin-bottom: 16px;">
+    <li>
+      <a href="{% url 'profile' %}"
+         class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <span class="nav-icon"><i class="fa-solid fa-user-circle"></i></span>
+        Profile
+      </a>
+    </li>
+  </ul>
+
+  <!-- Sidebar Footer -->
+  <div class="sidebar-footer">
+    {% if user.is_authenticated %}
+    <a href="{% url 'profile' %}" class="sidebar-user">
+      <div class="user-avatar">
+        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+        <div class="user-role">
+          {% if user.is_staff %}Administrator{% else %}Member{% endif %}
+        </div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="font-size:10px; color: var(--text-muted);"></i>
+    </a>
+    {% endif %}
+  </div>
+
+</nav>
+
+<!-- Mobile overlay -->
+<div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TOP NAVBAR
+════════════════════════════════════════════════════════════════════ -->
+<header id="topnav">
+
+  <!-- Sidebar toggle -->
+  <button class="topnav-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <!-- Page title -->
+  <div class="topnav-title">
+    {% block page_title %}
+      Finance Tracker Pro
+      <small>{% block page_subtitle %}Personal Finance Dashboard{% endblock %}</small>
+    {% endblock %}
+  </div>
+
+  <!-- Actions -->
+  <div class="topnav-actions">
+
+    <!-- Notifications -->
+    <div class="dropdown">
+      <button class="topnav-btn" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+        <i class="fa-solid fa-bell" style="font-size:15px;"></i>
+        {% if unread_notifications_count and unread_notifications_count > 0 %}
+        <span class="notification-badge">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px; padding: 0 !important; overflow: hidden;">
+        <li>
+          <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; font-size:13px;">Notifications</span>
+            {% if unread_notifications_count and unread_notifications_count > 0 %}
+            <span class="badge-accent">{{ unread_notifications_count }} new</span>
+            {% endif %}
+          </div>
+        </li>
+        {% if notifications %}
+          {% for notif in notifications|slice:":5" %}
+          <li>
+            <a class="dropdown-item" href="#" style="padding: 12px 16px !important; border-radius:0 !important; border-bottom: 1px solid var(--border);">
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <div style="width:8px; height:8px; background:{% if notif.is_read %}transparent{% else %}var(--accent){% endif %}; border-radius:50%; margin-top:5px; flex-shrink:0;"></div>
+                <div>
+                  <div style="font-size:12.5px; font-weight:600; color: var(--text-primary); margin-bottom:2px;">{{ notif.title }}</div>
+                  <div style="font-size:11.5px; color: var(--text-muted);">{{ notif.message|truncatechars:60 }}</div>
+                  <div style="font-size:10.5px; color: var(--text-muted); margin-top:3px;">{{ notif.created_at|timesince }} ago</div>
+                </div>
+              </div>
+            </a>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li>
+            <div style="padding: 24px 16px; text-align:center; color: var(--text-muted); font-size:12.5px;">
+              <i class="fa-solid fa-bell-slash" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.4;"></i>
+              No notifications yet
+            </div>
+          </li>
+        {% endif %}
+        <li>
+          <a class="dropdown-item" href="#" style="padding: 12px 16px !important; border-radius:0 !important; text-align:center; color: var(--accent) !important; font-weight:600; font-size:12.5px;">
+            View all notifications
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Quick add -->
+    <a href="{% url 'add_transaction' %}" class="topnav-btn" title="Add Transaction">
+      <i class="fa-solid fa-plus" style="font-size:14px;"></i>
+    </a>
+
+    <!-- User menu -->
+    {% if user.is_authenticated %}
+    <div class="dropdown">
+      <a href="#" class="user-chip" data-bs-toggle="dropdown" aria-expanded="false">
+        <div class="chip-avatar">
+          {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+        </div>
+        <span class="chip-name">{{ user.get_full_name|default:user.username }}</span>
+        <i class="fa-solid fa-chevron-down" style="font-size:10px; color: var(--text-muted);"></i>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+            <div style="font-size:12.5px; font-weight:700;">{{ user.get_full_name|default:user.username }}</div>
+            <div style="font-size:11px; color: var(--text-muted);">{{ user.email }}</div>
+          </div>
+        </li>
+        <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa-solid fa-user fa-fw me-2" style="opacity:0.6;"></i>My Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'analytics' %}"><i class="fa-solid fa-chart-bar fa-fw me-2" style="opacity:0.6;"></i>Analytics</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports' %}"><i class="fa-solid fa-file-invoice fa-fw me-2" style="opacity:0.6;"></i>Reports</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item text-danger" href="{% url 'logout' %}"
+             onclick="return confirm('Are you sure you want to logout?')">
+            <i class="fa-solid fa-right-from-bracket fa-fw me-2"></i>Sign Out
+          </a>
+        </li>
+      </ul>
+    </div>
+    {% else %}
+    <a href="{% url 'login' %}" class="btn-accent" style="padding: 7px 16px; font-size:12.5px; border-radius:8px; text-decoration:none; color:#fff; font-weight:600;">
+      Sign In
+    </a>
+    {% endif %}
+
+  </div>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════════════ -->
+<main id="main-content">
+  <div class="content-wrapper">
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Footer -->
+  <footer id="page-footer">
+    <div>
+      <span class="footer-brand">Finance Tracker Pro</span>
+      &copy; 2024 &mdash; All rights reserved
+    </div>
+    <div style="color: var(--text-muted); font-size:11.5px;">
+      Built with
+      <i class="fa-brands fa-python" style="color:#4b8bbe;"></i> Django &amp; Flask &nbsp;&bull;&nbsp;
+      <i class="fa-solid fa-database" style="color:#f29111;"></i> MySQL &nbsp;&bull;&nbsp;
+      <i class="fa-solid fa-brain" style="color:var(--accent);"></i> ML Predictions
+    </div>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Help</a>
+    </div>
+  </footer>
+</main>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TOAST NOTIFICATIONS
+════════════════════════════════════════════════════════════════════ -->
+<div id="toast-container">
+  {% if messages %}
+    {% for message in messages %}
+    <div class="ft-toast toast-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}"
+         data-auto-dismiss="5000">
+      <div class="toast-icon">
+        {% if message.tags == 'error' %}
+          <i class="fa-solid fa-circle-xmark"></i>
+        {% elif message.tags == 'warning' %}
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        {% elif message.tags == 'info' %}
+          <i class="fa-solid fa-circle-info"></i>
+        {% else %}
+          <i class="fa-solid fa-circle-check"></i>
+        {% endif %}
+      </div>
+      <div class="toast-body">
+        <div class="toast-title">
+          {% if message.tags == 'error' %}Error{% elif message.tags == 'warning' %}Warning{% elif message.tags == 'info' %}Info{% else %}Success{% endif %}
+        </div>
+        <div class="toast-msg">{{ message }}</div>
+      </div>
+      <button class="toast-close" onclick="dismissToast(this.parentElement)">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════════════════════════ -->
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  /* ── Sidebar toggle ─────────────────────────────────────── */
+  const sidebar        = document.getElementById('sidebar');
+  const overlay        = document.getElementById('sidebarOverlay');
+  const topnav         = document.getElementById('topnav');
+  const mainContent    = document.getElementById('main-content');
+  const IS_MOBILE      = () => window.innerWidth < 992;
+
+  let sidebarOpen = !IS_MOBILE();   // Desktop: open by default
+
+  function applyState() {
+    if (IS_MOBILE()) {
+      sidebar.classList.toggle('mobile-open', sidebarOpen);
+      overlay.classList.toggle('active', sidebarOpen);
+    } else {
+      sidebar.classList.toggle('collapsed', !sidebarOpen);
+      topnav.classList.toggle('sidebar-collapsed', !sidebarOpen);
+      mainContent.classList.toggle('sidebar-collapsed', !sidebarOpen);
+      overlay.classList.remove('active');
+    }
+  }
+
+  function toggleSidebar() {
+    sidebarOpen = !sidebarOpen;
+    applyState();
+  }
+
+  function closeSidebar() {
+    sidebarOpen = false;
+    applyState();
+  }
+
+  window.addEventListener('resize', () => {
+    sidebarOpen = !IS_MOBILE();
+    applyState();
+  });
+
+  applyState();
+
+  /* ── Toast dismissal ────────────────────────────────────── */
+  function dismissToast(el) {
+    el.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }
+
+  // Auto-dismiss toasts
+  document.querySelectorAll('.ft-toast[data-auto-dismiss]').forEach(toast => {
+    const delay = parseInt(toast.dataset.autoDismiss) || 5000;
+    setTimeout(() => dismissToast(toast), delay);
+  });
+
+  /* ── Highlight active sidebar links ─────────────────────── */
+  (function() {
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.sidebar-nav a').forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      }
+    });
+  })();
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

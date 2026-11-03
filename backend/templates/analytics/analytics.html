@@ -1,0 +1,134 @@
+{% extends "base/base.html" %}
+{% block title %}Spending Analytics — Finance Tracker Pro{% endblock %}
+
+{% block content %}
+<div class="mb-4"><h2 class="fw-bold mb-0">Spending Analytics</h2><p class="text-muted mb-0">12-month trends and deep category analysis</p></div>
+
+<div class="row g-4 mb-4">
+  <!-- 12-Month Trend -->
+  <div class="col-12">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">12-Month Income vs Expense Trend</h6>
+      <canvas id="trendChart" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Expense by Category</h6>
+      <canvas id="catExpChart" height="260"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Payment Method Breakdown</h6>
+      <canvas id="paymentChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Category Table -->
+  <div class="col-lg-8">
+    <div class="card-dark p-4">
+      <h6 class="fw-bold mb-3">Category-wise Expense Analysis</h6>
+      {% if cat_expense %}
+      <div class="table-responsive">
+        <table class="table table-dark mb-0" style="--bs-table-bg:transparent;--bs-table-border-color:#21262d;">
+          <thead><tr><th class="text-muted small">Category</th><th class="text-muted small text-end">Amount</th><th class="text-muted small text-end">Transactions</th><th class="text-muted small">Share</th></tr></thead>
+          <tbody>
+            {% for c in cat_expense %}
+            <tr style="border-bottom:1px solid #21262d;">
+              <td><span class="badge" style="background:rgba(16,185,129,.1);color:#10b981;">{{ c.category__name|default:"Uncategorized" }}</span></td>
+              <td class="text-end fw-bold text-danger">₹{{ c.total|floatformat:0 }}</td>
+              <td class="text-end text-muted small">{{ c.count }}</td>
+              <td style="width:120px;">
+                <div class="progress" style="height:6px;background:#21262d;">
+                  <div class="progress-bar" style="width:{% widthratio c.total cat_expense.0.total 100 %}%;background:#ef4444;"></div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}<p class="text-muted small">No expense data yet.</p>{% endif %}
+    </div>
+  </div>
+
+  <!-- Anomalies -->
+  <div class="col-lg-4">
+    <div class="card-dark p-4">
+      <div class="d-flex justify-content-between mb-3">
+        <h6 class="fw-bold mb-0"><i class="fa-solid fa-triangle-exclamation me-2" style="color:#f59e0b;"></i>Anomalies</h6>
+        <form method="post" action="{% url 'run_anomaly' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm" style="background:rgba(245,158,11,.12);border:1px solid #f59e0b;color:#f59e0b;font-size:.75rem;">Run Detection</button>
+        </form>
+      </div>
+      {% if anomalies %}
+        {% for a in anomalies %}
+          <div class="p-2 mb-2" style="background:#0d1117;border-radius:8px;border-left:3px solid #f59e0b;">
+            <div class="d-flex justify-content-between">
+              <small class="fw-semibold" style="color:#e6edf3;">{{ a.description|truncatechars:25 }}</small>
+              <small class="text-danger fw-bold">₹{{ a.amount|floatformat:0 }}</small>
+            </div>
+            <small class="text-muted">{{ a.date|date:"d M Y" }} {% if a.category %}· {{ a.category.name }}{% endif %}</small><br>
+            <small style="color:#f59e0b;font-size:.7rem;">Score: {{ a.anomaly_score|floatformat:3 }}</small>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted small">No anomalies detected. Run detection to check.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const monthlyData = {{ monthly_json|safe }};
+const catExpData = {{ cat_expense_json|safe }};
+const paymentData = {{ payment_json|safe }};
+
+// 1. Trend chart
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [
+      { label: 'Income', data: monthlyData.map(d => d.income), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', fill: true, tension: 0.4, pointRadius: 4 },
+      { label: 'Expense', data: monthlyData.map(d => d.expense), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', fill: true, tension: 0.4, pointRadius: 4 },
+      { label: 'Savings', data: monthlyData.map(d => d.savings), borderColor: '#3b82f6', borderDash: [5,5], tension: 0.4, pointRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#8b949e', boxWidth: 12 } } },
+    scales: { x: { ticks: { color: '#8b949e' }, grid: { color: 'rgba(48,54,61,0.5)' } }, y: { ticks: { color: '#8b949e', callback: v => '₹' + v.toLocaleString() }, grid: { color: 'rgba(48,54,61,0.5)' } } }
+  }
+});
+
+// 2. Category doughnut
+if (catExpData.length > 0) {
+  const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#a855f7','#06b6d4'];
+  new Chart(document.getElementById('catExpChart'), {
+    type: 'doughnut',
+    data: { labels: catExpData.map(d => d.name), datasets: [{ data: catExpData.map(d => d.total), backgroundColor: catExpData.map((d,i) => colors[i % colors.length]), borderWidth: 2, borderColor: '#161b22' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#8b949e', boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => ctx.label + ': ₹' + ctx.parsed.toLocaleString() } } }, cutout: '60%' }
+  });
+}
+
+// 3. Payment method bar
+if (paymentData.length > 0) {
+  new Chart(document.getElementById('paymentChart'), {
+    type: 'bar',
+    data: { labels: paymentData.map(d => d.method.replace('_',' ').toUpperCase()), datasets: [{ label: 'Amount (₹)', data: paymentData.map(d => d.total), backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, borderRadius: 6 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#8b949e', callback: v => '₹' + v.toLocaleString() }, grid: { color: 'rgba(48,54,61,0.5)' } }, y: { ticks: { color: '#8b949e' }, grid: { display: false } } } }
+  });
+}
+</script>
+{% endblock %}
+
