@@ -28,3 +28,4 @@ try {
     Write-Host "`nStopping ML microservice process..." -ForegroundColor Red
     Stop-Process -Id $mlProcess.Id -ErrorAction SilentlyContinue
 }
+

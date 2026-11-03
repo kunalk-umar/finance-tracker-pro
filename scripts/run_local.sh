@@ -21,3 +21,4 @@ trap "kill $ML_PID 2>/dev/null || true" EXIT
 echo -e "\n[3/3] Starting Django server on http://127.0.0.1:8000..."
 echo "Demo Login: demo_user / Demo@123456"
 python manage.py runserver 0.0.0.0:8000
+
