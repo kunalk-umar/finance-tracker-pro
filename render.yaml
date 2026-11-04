@@ -1,4 +1,5 @@
 services:
+  # ── Main Django Web App ────────────────────────────────────────────────────
   - type: web
     name: finance-tracker-web
     env: python
@@ -6,21 +7,31 @@ services:
     plan: free
     branch: main
     rootDir: backend
-    buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py seed_demo_data"
-    startCommand: "gunicorn config.wsgi:application"
+    buildCommand: >
+      pip install -r requirements.txt &&
+      python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      python manage.py seed_demo_data
+    startCommand: "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    healthCheckPath: /accounts/login/
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: "False"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finance-tracker-db
+          property: connectionString
       - key: ML_SERVICE_URL
         fromService:
           type: web
           name: finance-tracker-ml
           property: host
-      - key: PYTHON_VERSION
-        value: 3.11.9
 
+  # ── Flask ML Microservice ───────────────────────────────────────────────────
   - type: web
     name: finance-tracker-ml
     env: python
@@ -29,7 +40,16 @@ services:
     branch: main
     rootDir: ml_service
     buildCommand: "pip install -r requirements.txt && python train_models.py"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: "3.11.9"
+
+# ── PostgreSQL Database ─────────────────────────────────────────────────────
+databases:
+  - name: finance-tracker-db
+    region: oregon
+    plan: free
+    databaseName: finance_tracker
+    user: finance_user

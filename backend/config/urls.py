@@ -18,8 +18,8 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="support@financetracker.pro"),
         license=openapi.License(name="MIT License"),
     ),
-    public=False,
-    permission_classes=[permissions.IsAuthenticated],
+    public=True,
+    permission_classes=[permissions.AllowAny],
 )
 
 urlpatterns = [
